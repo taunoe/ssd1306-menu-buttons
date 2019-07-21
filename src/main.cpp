@@ -21,25 +21,20 @@
 #define SCREEN_RESET_PIN     16 // ? not conected D0-GPIO16
 
 /* Buttons */
-#define BTN_UP     0 // D3
-#define BTN_SELECT 2 // D4
+#define BTN_UP     0  // D3
+#define BTN_SELECT 2  // D4
 #define BTN_DOWN   12 // D6
 
-#define MENU_ROW_HEIGHT 16
-#define MENU_LENGTH      4 
 #define MENU_FONT_SIZE   2
-
-int menu_pos{0};
-int page = 0;
+#define MENU_ROW_HEIGHT 16
 
 /* Menu items */
-String menu[MENU_LENGTH] = {
-  "Esimene",  // 0
-  "Teine", // 1
-  "Kolmas",          // 2
-  "Exit"
-};
+#define MENU_1_LENGTH    4
+const char * menu_1_items[] = {"Page 2", "Page 3", "Page 4", "Exit"};
 
+/* Global variables */
+uint8_t menu_pos {0};
+uint8_t page {0};
 
 /* Initialize screen */
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, SCREEN_RESET_PIN);
@@ -47,11 +42,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, SCREEN_RESET_PIN);
 /**********************************
  * Custom function declarations
  **********************************/
-
 void taunotxt(uint16_t data, uint8_t fontsize);
 bool is_button(int pin);
 void display_home ();
-void display_menu_page_1 ();
+void display_page_2 ();
+void display_page_3 ();
+void display_page_4 ();
+void display_menu_page (uint8_t menu_length, const char *menu[]);
 
 
 /********************************************************/
@@ -61,8 +58,6 @@ void setup() {
   pinMode(BTN_UP, INPUT_PULLUP);
   pinMode(BTN_SELECT, INPUT_PULLUP);
   pinMode(BTN_DOWN, INPUT_PULLUP);
-  
-  //uint16_t number = 1;
   
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_I2C_ADDRESS)) { // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
     Serial.println(F("SSD1306 allocation failed"));
@@ -78,57 +73,62 @@ void setup() {
 }
 
 void loop() {
+  // 0 = home
+  if (page == 0) {
+    display_home ();
 
-  if (page == 0 && is_button(BTN_DOWN)) {
-    page = 1; // Go to menu (1)
+    if (is_button(BTN_DOWN)) {
+      page = 1; // Go to menu 1 (1)
+    }
+    
   }
   else if (page == 1) {
-    // Menu
-    display_menu_page_1 ();
-    /*
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    for (int i = 0; i < MENU_LENGTH; i++)
-    {
-      display.setCursor(2, MENU_ROW_HEIGHT * i +1);
-      if (menu_pos == i) {
-        display.setTextColor(BLACK, WHITE);
-        display.fillRect(0, MENU_ROW_HEIGHT * i, SCREEN_WIDTH, MENU_ROW_HEIGHT + 1, WHITE);
-      }
-      else
-      {
-        display.setTextColor(WHITE);
-      }
-      display.println(menu[i]);
-    }
-    display.display();
-    */
-
+    display_menu_page (MENU_1_LENGTH, menu_1_items);
+    
     // Move down on menu
     if (is_button(BTN_DOWN)) {
       menu_pos++;
-      if (menu_pos > MENU_LENGTH - 1) {
+      if (menu_pos > MENU_1_LENGTH - 1) {
         menu_pos = 0;
       }
     }
     // Move up on menu
     else if (is_button(BTN_UP)) {
-      menu_pos--;
-      if (menu_pos < 0) {
-        menu_pos = MENU_LENGTH - 1;
+      if (menu_pos == 0) {
+        menu_pos = MENU_1_LENGTH - 1;
+      }
+      else {
+        menu_pos--;
       }
     }
     // Select menu item
     else if (is_button(BTN_SELECT)) {
-      if (menu_pos == 3) { // Exit
+      if (menu_pos == 0) {
+        page = 2;
+      }
+      else if (menu_pos == 1) { // Exit
+        page = 3;
+      }
+      else if (menu_pos == 2) { // Exit
+        page = 4;
+      }
+      else if (menu_pos == 3) { // Exit
         page = 0;
         menu_pos = 0;
       }
     }
 
   }
-  else{
+  else if (page == 2) {
+    display_page_2 ();
+  }
+  else if (page == 3) {
+    display_page_3 ();
+  }
+  else if (page == 4) {
+    display_page_4 ();
+  }
+  else { // page = 0 = home
     display_home ();
   }
 
@@ -154,19 +154,8 @@ void loop() {
 */
 } // loop end
 
+
 /* custom functions */
-
-void taunotxt(uint16_t data, uint8_t fontsize){
-  display.clearDisplay();       // Clear the buffer
-
-  display.setTextSize(fontsize);       // Normal 1:1 pixel scale
-  display.setTextColor(WHITE);  // Draw white text
-  display.setCursor(0,0);       // Start at top-left corner
-  //display.println(F(data));
-  display.println(data);
-
-  display.display();
-}
 
 /*!
  * @brief   Checks whether the button is pressed down or not.
@@ -187,26 +176,20 @@ bool is_button(int pin) {
   return false;
 }
 
-/*
- *
+
+/*!
+ * @brief   Display menu content
+ * @param   menu_length
+ *          Elements on char array
+ * @param   menu
+ *          char array of menu items
  */
-void display_home () {
-  page = 0;
-
-  display.clearDisplay();
-  display.setTextSize(MENU_FONT_SIZE);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println(F("Home"));
-  display.display();
-}
-
-void display_menu_page_1 () {
+void display_menu_page (uint8_t menu_length, const char *menu[]) {
   display.clearDisplay();
   display.setTextSize(MENU_FONT_SIZE);
   display.setTextColor(WHITE);
 
-  for (int i = 0; i < MENU_LENGTH; i++)
+  for (uint8_t i = 0; i < menu_length; i++)
   {
       display.setCursor(2, MENU_ROW_HEIGHT * i +1);
       if (menu_pos == i) {
@@ -220,5 +203,53 @@ void display_menu_page_1 () {
       display.println(menu[i]);
   }
 
+  display.display();
+}
+
+/*!
+ * @brief   Display home page content
+ */
+void display_home () {
+  display.clearDisplay();
+  display.setTextSize(MENU_FONT_SIZE);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Home"));
+  display.display();
+}
+
+/*!
+ * @brief   Display page content
+ */
+void display_page_2 () {
+  display.clearDisplay();
+  display.setTextSize(MENU_FONT_SIZE);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Page 2"));
+  display.display();
+}
+
+/*!
+ * @brief   Display page content
+ */
+void display_page_3 () {
+  display.clearDisplay();
+  display.setTextSize(MENU_FONT_SIZE);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Page 3"));
+  display.display();
+}
+
+/*!
+ * @brief   Display page content
+ */
+void display_page_4 () {
+  display.clearDisplay();
+  display.setTextSize(MENU_FONT_SIZE);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.println(F("Page 4"));
   display.display();
 }
