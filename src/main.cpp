@@ -14,11 +14,14 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "pitches.h"
+
+#define SPEAKER_PIN          16
 
 #define SCREEN_I2C_ADDRESS 0x3c // use i2c scanner to find address 0x3c
 #define SCREEN_WIDTH        128 // OLED display width, in pixels
 #define SCREEN_HEIGHT        64 // OLED display height, in pixels
-#define SCREEN_RESET_PIN     16 // ? not conected D0-GPIO16
+#define SCREEN_RESET_PIN     10 // 16 ? not conected D0-GPIO16
 
 /* Buttons */
 #define BTN_UP     0  // D3
@@ -35,6 +38,10 @@ const char * menu_1_items[] = {"Page 2", "Page 3", "Page 4", "Exit"};
 /* Global variables */
 uint8_t menu_pos {0};
 uint8_t page {0};
+
+int notes[] = {
+  NOTE_A4, NOTE_B4, NOTE_C3
+};
 
 /* Initialize screen */
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, SCREEN_RESET_PIN);
@@ -73,6 +80,9 @@ void setup() {
 }
 
 void loop() {
+  //tone(16, notes[0], 20);
+  //tone(16, notes[1], 20);
+  //tone(16, notes[2], 20);
   // 0 = home
   if (page == 0) {
     display_home ();
@@ -91,6 +101,7 @@ void loop() {
       if (menu_pos > MENU_1_LENGTH - 1) {
         menu_pos = 0;
       }
+      tone(SPEAKER_PIN, notes[1], 20);
     }
     // Move up on menu
     else if (is_button(BTN_UP)) {
