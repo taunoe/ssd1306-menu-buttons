@@ -1,10 +1,13 @@
 /*************************************************************
+ * 
+ * @author Tauno Erik
  * Töötab ,testitud 23.07.219
+ * 
  * ESP8266 
  * OLED SSD1306 128*64
  * 
- * D1-GPIO5 = SCL
- * D2-GPIO4 = SDA
+ * D1-GPIO5  = SCL
+ * D2-GPIO4  = SDA
  * D5-GPIO14 = SCLK
  * D7-GPIO13 = MOSI
  * D8-GPIO15 = CS
@@ -16,23 +19,26 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "pitches.h"
-
-#define SPEAKER_PIN          16
+#include "functions.h"
 
 #define SCREEN_I2C_ADDRESS 0x3c  // use i2c scanner to find address 0x3c
-#define SCREEN_WIDTH        128  // OLED display width, in pixels
-#define SCREEN_HEIGHT        64  // OLED display height, in pixels
-#define SCREEN_RESET_PIN     10  // 16 ? not conected D0-GPIO16
 
-#define BTN_UP                0  // D3
-#define BTN_SELECT            2  // D4
-#define BTN_DOWN             12  // D6
+const uint8_t SPEAKER_PIN  {16};  // D0
 
-#define MENU_FONT_SIZE        2
-#define MENU_ROW_HEIGHT      16
 
-#define MENU_1_LENGTH         4
-#define MENU_4_LENGTH         3
+const uint8_t SCREEN_WIDTH        {128};  // OLED display width, in pixels
+const uint8_t SCREEN_HEIGHT        {64};  // OLED display height, in pixels
+const uint8_t SCREEN_RESET_PIN     {10};  // 16 ? not conected D0-GPIO16
+
+const uint8_t BTN_UP                {0};  // D3
+const uint8_t BTN_SELECT            {2};  // D4
+const uint8_t BTN_DOWN             {12};  // D6
+
+const uint8_t MENU_FONT_SIZE        {2};
+const uint8_t MENU_ROW_HEIGHT      {16};
+
+const uint8_t MENU_1_LENGTH         {4};
+const uint8_t MENU_4_LENGTH         {3};
 
 const char *menu_1_items[] = {"Page 2", "Page 3", "Sound", "Exit"};
 const char *menu_4_items[] = {"Buttons", "Light", "Exit"};
@@ -42,21 +48,6 @@ uint8_t  menu_4_states[] = {1 , 0, 0};
 uint8_t menu_pos {0};
 uint8_t page {0};
 
-
-/************************************
- *** Custom function declarations ***
- ************************************/
-bool is_button(uint8_t pin);
-void move_menu_up (uint8_t menu_length);
-void move_menu_down (uint8_t menu_length);
-void play_note (uint8_t speaker_pin, uint16_t the_tone, uint8_t duration);
-void sound_on_off();
-void go_page(uint8_t new_page);
-void display_home ();
-void display_page_2 ();
-void display_page_3 ();
-void display_page_4 ();
-void display_menu_page (uint8_t menu_length, const char *menu[]);
 
 
 /* Initialize screen */
@@ -82,8 +73,10 @@ void setup() {
 }
 
 void loop() {
+ Serial.println(menu_4_states[0]);
+
   if (page == 0) {
-      display_home ();
+      display_home();
 
       if (is_button(BTN_DOWN)) {   // Go to menu 1
           go_page(1); 
@@ -128,14 +121,14 @@ void loop() {
           move_menu_up(MENU_4_LENGTH);
       }
       else if (is_button(BTN_SELECT)) {
-          if (menu_pos == 2) {
+          if (menu_pos == 0) {
+              menu_4_states[menu_pos] = flip_num(menu_4_states[menu_pos]);
+          }
+          else if (menu_pos == 1) {
+              menu_4_states[menu_pos] = flip_num(menu_4_states[menu_pos]);
+          }
+          else if (menu_pos == 2) {
               go_page(0);
-          }
-          if (menu_4_states[menu_pos]) {
-              menu_4_states[menu_pos] = 0;
-          }
-          else {
-              menu_4_states[menu_pos] = 1;
           }
       }
   }
@@ -143,24 +136,6 @@ void loop() {
       display_home ();
   }
 
-/*
-  if (is_button(BTN_UP) && !is_button(BTN_SELECT) ){
-    Serial.println("BNT_UP");
-    taunotxt(1, 2);
-  }
-  if (is_button(BTN_UP) && is_button(BTN_SELECT) ){
-    Serial.println("BNT_UP + SELECT");
-    taunotxt(1, 2);
-  }
-  else if (is_button(BTN_SELECT) && !is_button(BTN_UP)){
-    Serial.println("BNT_SELECT");
-    taunotxt(2, 2);
-  }
-  else if (is_button(BTN_DOWN) ){
-    Serial.println("BNT_DOWN");
-    taunotxt(3, 2);
-  }
-*/
 } // loop end
 
 
@@ -168,24 +143,6 @@ void loop() {
  **** Custom Functions ****
  **************************/
 
-/*!
- * @brief   Checks whether the button is pressed down or not.
- * @param   pin
- *          Button pin is pulledup (HIGH)
- * @return  True if is pressed down (LOW), else false
- */
-bool is_button(uint8_t pin) {
-  if (digitalRead(pin) == LOW) {
-    delay(30);
-
-    if (digitalRead(pin) == LOW) {      
-      return true; //kui nupp on all
-      delay(30);
-    }
-    return false;
-  }
-  return false;
-}
 
 
 void move_menu_up (uint8_t menu_length) {
